@@ -24,4 +24,6 @@ urlpatterns = [
     path("api/v1/health/", health_check, name="health"),
     path("api/v1/", include("apps.accounts.urls")),
     path("api/v1/", include("apps.catalog.urls")),
+    path("api/v1/", include("apps.questionnaires.urls")),
+    path("api/v1/", include("apps.evaluations.urls")),
 ]
