@@ -12,6 +12,7 @@ from core import config
 from core.functional import levels
 from core.imperative.score_processor import compute_dimension_scores
 
+from . import inference
 from .models import Answer, EvaluationResult, ResultDimensionScore
 
 RESULT_NOTICE = (
@@ -117,5 +118,6 @@ def serialize_result(result):
         "created_at": result.created_at,
         "interests": [row(s) for s in scores if s.dimension.kind == Dimension.Kind.INTEREST],
         "skills": [row(s) for s in scores if s.dimension.kind == Dimension.Kind.SKILL],
+        "inference": inference.serialize(result),
         "notice": RESULT_NOTICE,
     }

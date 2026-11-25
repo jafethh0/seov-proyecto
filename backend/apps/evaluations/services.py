@@ -14,7 +14,7 @@ from rest_framework.exceptions import APIException, NotFound, ValidationError
 from apps.questionnaires.models import AnswerOption, Question, QuestionDimension, Questionnaire
 from core import config
 
-from . import scoring
+from . import inference, scoring
 from .models import Answer, Evaluation
 
 SECTION_KIND = {"INTERESTS": "INTEREST", "SKILLS": "SKILL"}
@@ -231,5 +231,6 @@ def submit_evaluation(user, pk):
     evaluation.status = Evaluation.Status.SUBMITTED
     evaluation.submitted_at = timezone.now()
     evaluation.save(update_fields=["status", "submitted_at", "updated_at"])
-    scoring.store_result(evaluation)
+    result = scoring.store_result(evaluation)
+    inference.store_inference(result)
     return evaluation
