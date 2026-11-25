@@ -74,7 +74,8 @@ async function loadDepartments(selectId, emptyLabel = "Sin preferencia") {
 function renderNavbar() {
   const logged = Auth.isLoggedIn();
   const links = logged
-    ? `<li class="nav-item"><a class="nav-link" href="/pages/profile.html">Mi perfil</a></li>
+    ? `<li class="nav-item"><a class="nav-link" href="/pages/dashboard.html">Mi orientación</a></li>
+       <li class="nav-item"><a class="nav-link" href="/pages/profile.html">Mi perfil</a></li>
        <li class="nav-item"><button class="btn btn-outline-secondary btn-sm ms-lg-2" id="logout-btn" type="button">Cerrar sesión</button></li>`
     : `<li class="nav-item"><a class="nav-link" href="/pages/login.html">Iniciar sesión</a></li>
        <li class="nav-item"><a class="btn btn-primary btn-sm ms-lg-2" href="/pages/register.html">Registrarme</a></li>`;

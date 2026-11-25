@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mis resultados - SEOV</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="/assets/css/styles.css" rel="stylesheet">
+</head>
+<body>
+  <div id="navbar"></div>
+
+  <main class="container py-4" style="max-width: 900px;">
+    <div id="alert" class="alert d-none" role="alert"></div>
+
+    <div id="content" class="d-none">
+      <h1 class="h3 mb-1">Tus resultados</h1>
+      <p class="alert alert-info small" id="result-notice"></p>
+
+      <section class="mb-4">
+        <h2 class="h5">Tus intereses</h2>
+        <div id="interests"></div>
+        <h2 class="h5 mt-4">Tus habilidades</h2>
+        <div id="skills"></div>
+      </section>
+
+      <section class="mb-4">
+        <h2 class="h5">Cómo llegamos a estas sugerencias</h2>
+        <div id="reasoning"></div>
+      </section>
+
+      <section>
+        <div class="d-flex flex-wrap align-items-end justify-content-between gap-3 mb-3">
+          <h2 class="h5 mb-0">Carreras y programas para explorar</h2>
+          <div>
+            <label class="form-label small mb-1" for="department">Dónde quiero estudiar</label>
+            <select class="form-select form-select-sm" id="department"></select>
+          </div>
+        </div>
+        <div id="recommendations"></div>
+        <h3 class="h6 mt-4" id="also-title"></h3>
+        <div id="also"></div>
+        <p class="small text-secondary mt-4" id="rec-notice"></p>
+      </section>
+
+      <div class="mt-4"><a href="/pages/dashboard.html">Volver a Mi orientación</a></div>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/assets/js/config.js"></script>
+  <script src="/assets/js/api.js"></script>
+  <script src="/assets/js/auth.js"></script>
+  <script src="/assets/js/ui.js"></script>
+  <script>
+    renderNavbar();
+    const evaluationId = new URLSearchParams(window.location.search).get("id");
+
+    function scoreRow(item) {
+      if (!item.valid) {
+        return `<div class="mb-2"><div class="d-flex justify-content-between small">
+          <span>${esc(item.name)}</span><span class="text-secondary">Sin datos suficientes</span></div>
+          <div class="progress" style="height: 8px;"></div></div>`;
+      }
+      const color = Labels.levelColor[item.level];
+      return `<div class="mb-2">
+        <div class="d-flex justify-content-between small">
+          <span>${esc(item.name)}</span>
+          <span><span class="badge text-bg-${color}">${Labels.level[item.level]}</span> ${Math.round(item.score)}/100</span>
+        </div>
+        <div class="progress" style="height: 8px;" role="progressbar" aria-label="${esc(item.name)}">
+          <div class="progress-bar bg-${color}" style="width: ${item.score}%"></div>
+        </div></div>`;
+    }
+
+    function renderReasoning(inference) {
+      const box = document.getElementById("reasoning");
+      if (!inference || !inference.steps.length) {
+        box.innerHTML = `<p class="text-secondary">Tus resultados no marcaron un perfil claro con las reglas del sistema,
+          así que te mostramos las áreas con mayor afinidad según tus puntuaciones.</p>`;
+        return;
+      }
+      const profiles = inference.profiles.map((p) =>
+        `<span class="badge text-bg-primary me-1">${esc(Labels.profile[p] || p)}</span>`).join("");
+      const steps = inference.steps.map((s) =>
+        `<li>${esc(s.text)} <span class="text-secondary small">(regla ${esc(s.rule)})</span></li>`).join("");
+      box.innerHTML = `<p>Perfiles que se destacan: ${profiles}</p>
+        <details><summary>Ver el razonamiento paso a paso</summary><ul class="mt-2">${steps}</ul></details>`;
+    }
+
+    function offeringHtml(o) {
+      const requirements = o.admission_requirements
+        ? `<div class="small"><strong>Requisitos:</strong> ${esc(o.admission_requirements)}</div>` : "";
+      return `<li class="mb-2">
+        <strong>${esc(o.institution)}</strong> · ${esc(o.campus)} (${esc(o.department)})<br>
+        <span class="small">${esc(Labels.modality[o.modality] || o.modality)}
+        ${o.duration_months ? ` · ${o.duration_months} meses` : ""}
+        · ${esc(Labels.sector[o.sector] || "")}</span>
+        ${requirements}
+        <div class="small text-secondary">Fuente verificada el ${esc(formatDate(o.verified_at))}:
+          <a href="${esc(o.source_url)}" target="_blank" rel="noopener noreferrer">ver fuente</a></div></li>`;
+    }
+
+    function recHtml(r) {
+      const why = r.why;
+      const color = Labels.affinityColor[r.level] || "secondary";
+      const rules = why.rules.map((x) => `<li>${esc(x.text)}</li>`).join("");
+      const strengths = why.strengths.length
+        ? `<p class="mb-1 small"><strong>Lo que más pesa a tu favor:</strong> ${why.strengths.map((s) =>
+            `${esc(s.name)} (${Math.round(s.score)})`).join(", ")}.</p>` : "";
+      const reinforce = why.to_reinforce.length
+        ? `<p class="mb-1 small"><strong>Podrías reforzar:</strong> ${why.to_reinforce.map((s) => esc(s.name)).join(", ")}.
+           Esto no te excluye de la carrera; es algo que se puede practicar.</p>` : "";
+      const highlight = why.type_highlighted
+        ? `<p class="mb-1 small">Este tipo de programa coincide con lo que sugiere tu perfil.</p>` : "";
+      const offers = r.offerings.length
+        ? `<ul class="list-unstyled mb-0">${r.offerings.map(offeringHtml).join("")}</ul>`
+        : `<p class="small text-secondary mb-0">Sin oferta verificada en la zona elegida.</p>`;
+      return `<div class="card mb-3"><div class="card-body">
+        <div class="d-flex flex-wrap justify-content-between gap-2">
+          <h3 class="h6 mb-0">${r.rank}. ${esc(r.program.name)}
+            <span class="badge text-bg-light border">${esc(Labels.programType[r.program.program_type])}</span></h3>
+          <span><span class="badge text-bg-${color}">${esc(Labels.affinity[r.level] || "")}</span>
+            <span class="text-secondary small">${Math.round(r.compat)}/100</span></span>
+        </div>
+        <div class="small text-secondary mb-2">${esc(r.program.category)} · ${esc(Labels.origin[r.origin])}</div>
+        <p class="small mb-2">${esc(r.program.description)}</p>
+        ${r.program.job_field ? `<p class="small mb-2"><strong>Campo laboral:</strong> ${esc(r.program.job_field)}</p>` : ""}
+        <details class="mb-2"><summary class="small">Por qué te la sugerimos</summary>
+          <ul class="small mt-2">${rules}</ul>${strengths}${reinforce}${highlight}</details>
+        <div><strong class="small">Dónde se ofrece</strong>${offers}</div>
+      </div></div>`;
+    }
+
+    async function loadRecommendations() {
+      const value = document.getElementById("department").value;
+      const query = value ? `?department=${encodeURIComponent(value)}` : "";
+      const data = await authFetch(`/evaluations/${evaluationId}/recommendations/${query}`);
+      document.getElementById("recommendations").innerHTML = data.recommendations.length
+        ? data.recommendations.map(recHtml).join("")
+        : `<p class="text-secondary">No hay carreras con oferta verificada en esa zona entre tus sugerencias principales.</p>`;
+      document.getElementById("also-title").textContent =
+        data.also_interesting.length ? "También podrían interesarte (sin oferta verificada en esa zona todavía)" : "";
+      document.getElementById("also").innerHTML = data.also_interesting.map(recHtml).join("");
+      document.getElementById("rec-notice").textContent = data.notice;
+    }
+
+    async function init() {
+      const result = await authFetch(`/evaluations/${evaluationId}/result/`);
+      document.getElementById("result-notice").textContent = result.notice;
+      document.getElementById("interests").innerHTML = result.interests.map(scoreRow).join("");
+      document.getElementById("skills").innerHTML = result.skills.map(scoreRow).join("");
+      renderReasoning(result.inference);
+
+      const select = document.getElementById("department");
+      select.add(new Option("Mi departamento preferido", ""));
+      select.add(new Option("Todo el país", "all"));
+      (await apiFetch("/departments/")).forEach((d) => select.add(new Option(d.name, d.slug)));
+      select.addEventListener("change", () => loadRecommendations().catch(fail));
+
+      document.getElementById("content").classList.remove("d-none");
+      await loadRecommendations();
+    }
+
+    function fail(err) {
+      document.getElementById("alert").classList.remove("d-none");
+      showAlert("alert", formatErrors(err));
+    }
+
+    if (requireLogin()) {
+      if (!evaluationId) window.location.href = "/pages/dashboard.html";
+      else init().catch(fail);
+    }
+  </script>
+</body>
+</html>

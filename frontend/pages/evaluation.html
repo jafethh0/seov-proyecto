@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cuestionario - SEOV</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="/assets/css/styles.css" rel="stylesheet">
+</head>
+<body>
+  <div id="navbar"></div>
+
+  <main class="container py-4" style="max-width: 760px;">
+    <div id="alert" class="alert d-none" role="alert"></div>
+
+    <div id="quiz" class="d-none">
+      <div class="d-flex justify-content-between small text-secondary mb-1">
+        <span id="section-label"></span>
+        <span id="progress-label"></span>
+      </div>
+      <div class="progress mb-3" role="progressbar" aria-label="Avance">
+        <div class="progress-bar" id="progress-bar" style="width: 0%"></div>
+      </div>
+
+      <p class="text-secondary" id="instructions"></p>
+      <div id="questions"></div>
+
+      <div class="d-flex justify-content-between mt-4">
+        <button class="btn btn-outline-secondary" id="prev-btn" type="button">Anterior</button>
+        <button class="btn btn-primary" id="next-btn" type="button">Siguiente</button>
+      </div>
+      <p class="small text-secondary mt-3 mb-0">
+        Tus respuestas se guardan al pasar de página. Puedes dejar preguntas sin responder,
+        pero necesitamos suficientes respuestas en cada tema para calcular tu resultado.
+      </p>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/assets/js/config.js"></script>
+  <script src="/assets/js/api.js"></script>
+  <script src="/assets/js/auth.js"></script>
+  <script src="/assets/js/ui.js"></script>
+  <script>
+    const PAGE_SIZE = 7;
+    let evaluation, pages = [], pageIndex = 0, totalQuestions = 0;
+    const answers = new Map();   // pregunta -> opción elegida (null = sin responder)
+    const dirty = new Set();     // preguntas cambiadas que aún no se han guardado
+
+    renderNavbar();
+
+    function buildPages(questionnaire) {
+      questionnaire.sections.forEach((section) => {
+        for (let i = 0; i < section.questions.length; i += PAGE_SIZE) {
+          pages.push({
+            title: section.title,
+            instructions: section.instructions,
+            questions: section.questions.slice(i, i + PAGE_SIZE),
+          });
+        }
+        totalQuestions += section.questions.length;
+      });
+    }
+
+    function renderPage() {
+      const page = pages[pageIndex];
+      document.getElementById("section-label").textContent =
+        `${page.title} · página ${pageIndex + 1} de ${pages.length}`;
+      document.getElementById("instructions").textContent = page.instructions;
+      document.getElementById("questions").innerHTML = page.questions.map((q, i) => `
+        <div class="card mb-3"><div class="card-body">
+          ${q.passage ? `<p class="fst-italic border-start border-3 ps-3 text-secondary" style="white-space: pre-line;">${esc(q.passage)}</p>` : ""}
+          <p class="fw-semibold mb-2" style="white-space: pre-line;">${esc(q.text)}</p>
+          ${q.options.map((o) => `
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="q${q.id}" id="o${o.id}"
+                     value="${o.id}" ${answers.get(q.id) === o.id ? "checked" : ""}>
+              <label class="form-check-label" for="o${o.id}">${esc(o.text)}</label>
+            </div>`).join("")}
+          <button class="btn btn-link btn-sm p-0 mt-2" type="button" data-clear="${q.id}">Quitar mi respuesta</button>
+        </div></div>`).join("");
+
+      document.querySelectorAll("#questions input[type=radio]").forEach((input) => {
+        input.addEventListener("change", () => {
+          const qid = Number(input.name.slice(1));
+          answers.set(qid, Number(input.value));
+          dirty.add(qid);
+          updateProgress();
+        });
+      });
+      document.querySelectorAll("[data-clear]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const qid = Number(btn.dataset.clear);
+          answers.set(qid, null);
+          dirty.add(qid);
+          document.querySelectorAll(`input[name=q${qid}]`).forEach((r) => (r.checked = false));
+          updateProgress();
+        });
+      });
+
+      document.getElementById("prev-btn").disabled = pageIndex === 0;
+      document.getElementById("next-btn").textContent =
+        pageIndex === pages.length - 1 ? "Enviar y ver resultados" : "Siguiente";
+      updateProgress();
+      window.scrollTo({ top: 0 });
+    }
+
+    function updateProgress() {
+      const done = [...answers.values()].filter((v) => v !== null).length;
+      document.getElementById("progress-label").textContent = `${done} de ${totalQuestions} respondidas`;
+      document.getElementById("progress-bar").style.width = `${(100 * done) / totalQuestions}%`;
+    }
+
+    async function saveDirty() {
+      if (!dirty.size) return;
+      const items = [...dirty].map((q) => ({ question: q, option: answers.get(q) }));
+      await authFetch(`/evaluations/${evaluation.id}/answers/`, {
+        method: "PUT",
+        body: JSON.stringify({ answers: items }),
+      });
+      dirty.clear();
+    }
+
+    function fail(err) {
+      document.getElementById("alert").classList.remove("d-none");
+      let text = formatErrors(err);
+      const sections = err && err.data && err.data.progress && err.data.progress.sections;
+      if (sections) {
+        const names = { INTERESTS: "Intereses", SKILLS: "Habilidades" };
+        text += "\n" + Object.entries(sections).map(([k, s]) =>
+          `${names[k] || k}: ${s.valid_dimensions} de ${s.required_dimensions} temas con suficientes respuestas.`
+        ).join("\n");
+      }
+      if (err && err.status === 409) {
+        text += "\nVuelve a «Mi orientación» para empezar una evaluación nueva.";
+      }
+      showAlert("alert", text);
+    }
+
+    async function go(delta) {
+      const button = document.getElementById("next-btn");
+      document.getElementById("prev-btn").disabled = true;
+      button.disabled = true;
+      document.getElementById("alert").classList.add("d-none");
+      try {
+        await saveDirty();
+        const last = pageIndex === pages.length - 1;
+        if (delta > 0 && last) {
+          await authFetch(`/evaluations/${evaluation.id}/submit/`, { method: "POST" });
+          window.location.href = `/pages/results.html?id=${evaluation.id}`;
+          return;
+        }
+        pageIndex += delta;
+      } catch (err) {
+        fail(err);
+      }
+      button.disabled = false;
+      renderPage();
+    }
+
+    async function init() {
+      evaluation = await authFetch("/evaluations/", { method: "POST" });
+      if (evaluation.status !== "DRAFT") throw { data: { detail: "La evaluación ya fue enviada." } };
+      const questionnaire = await authFetch("/questionnaires/active/");
+      buildPages(questionnaire);
+      evaluation.answers.forEach((a) => answers.set(a.question, a.option));
+      document.getElementById("quiz").classList.remove("d-none");
+      renderPage();
+    }
+
+    if (requireLogin()) {
+      document.getElementById("prev-btn").addEventListener("click", () => go(-1));
+      document.getElementById("next-btn").addEventListener("click", () => go(1));
+      init().catch(fail);
+    }
+  </script>
+</body>
+</html>
