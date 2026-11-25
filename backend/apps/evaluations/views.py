@@ -53,3 +53,7 @@ class EvaluationSubmitView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         return Response(services.detail(evaluation))
+    
+class EvaluationResultView(APIView):
+    def get(self, request, pk):
+        return Response(services.get_result(request.user, pk))

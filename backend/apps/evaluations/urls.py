@@ -11,6 +11,11 @@ urlpatterns = [
         name="evaluation-answers",
     ),
     path(
+        "evaluations/<int:pk>/result/",
+        views.EvaluationResultView.as_view(),
+        name="evaluation-result",
+    ),
+    path(
         "evaluations/<int:pk>/submit/",
         views.EvaluationSubmitView.as_view(),
         name="evaluation-submit",

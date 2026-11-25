@@ -1,7 +1,7 @@
 # Register your models here.
 from django.contrib import admin
 
-from .models import Answer, Evaluation
+from .models import Answer, Evaluation, EvaluationResult, ResultDimensionScore
 
 
 class AnswerInline(admin.TabularInline):
@@ -24,6 +24,28 @@ class EvaluationAdmin(admin.ModelAdmin):
     list_select_related = ("user", "questionnaire")
     readonly_fields = ("user", "questionnaire", "status", "started_at", "updated_at", "submitted_at")
     inlines = [AnswerInline]
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+class ScoreInline(admin.TabularInline):
+    model = ResultDimensionScore
+    extra = 0
+    can_delete = False
+    readonly_fields = ("dimension", "score", "level", "answered", "total", "required", "is_valid")
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(EvaluationResult)
+class EvaluationResultAdmin(admin.ModelAdmin):
+    list_display = ("id", "evaluation", "scoring_version", "created_at")
+    readonly_fields = ("evaluation", "scoring_version", "config", "created_at")
+    inlines = [ScoreInline]
 
     def has_add_permission(self, request):
         return False

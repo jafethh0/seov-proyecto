@@ -86,3 +86,48 @@ class Answer(models.Model):
         if self.evaluation.status == Evaluation.Status.SUBMITTED:
             raise ValidationError("La evaluación ya fue enviada y no se puede modificar.")
         return super().delete(*args, **kwargs)
+
+class EvaluationResult(models.Model):
+    evaluation = models.OneToOneField(Evaluation, on_delete=models.PROTECT, related_name="result")
+    scoring_version = models.CharField(max_length=20)
+    config = models.JSONField(default=dict)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Resultado de la evaluación {self.evaluation_id} (v{self.scoring_version})"
+
+
+class ResultDimensionScore(models.Model):
+    class Level(models.TextChoices):
+        HIGH = "HIGH", "Alto"
+        MEDIUM = "MEDIUM", "Medio"
+        LOW = "LOW", "Bajo"
+
+    result = models.ForeignKey(EvaluationResult, on_delete=models.CASCADE, related_name="scores")
+    dimension = models.ForeignKey(
+        "questionnaires.Dimension", on_delete=models.PROTECT, related_name="result_scores"
+    )
+    score = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    level = models.CharField(max_length=6, choices=Level.choices, null=True, blank=True)
+    answered = models.PositiveSmallIntegerField()
+    total = models.PositiveSmallIntegerField()
+    required = models.PositiveSmallIntegerField()
+    is_valid = models.BooleanField()
+
+    class Meta:
+        ordering = ["dimension__kind", "dimension__code"]
+        constraints = [
+            models.UniqueConstraint(fields=["result", "dimension"], name="one_score_per_dimension_in_result"),
+            models.CheckConstraint(
+                condition=Q(score__isnull=True) | (Q(score__gte=0) & Q(score__lte=100)),
+                name="result_score_between_0_and_100",
+            ),
+            models.CheckConstraint(
+                condition=Q(is_valid=True, score__isnull=False, level__isnull=False)
+                | Q(is_valid=False, score__isnull=True, level__isnull=True),
+                name="result_score_matches_validity",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.dimension_id}: {self.score}"

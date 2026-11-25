@@ -14,6 +14,7 @@ from rest_framework.exceptions import APIException, NotFound, ValidationError
 from apps.questionnaires.models import AnswerOption, Question, QuestionDimension, Questionnaire
 from core import config
 
+from . import scoring
 from .models import Answer, Evaluation
 
 SECTION_KIND = {"INTERESTS": "INTEREST", "SKILLS": "SKILL"}
@@ -116,8 +117,22 @@ def detail(evaluation):
             for question_id, option_id in evaluation.answers.values_list("question_id", "option_id")
         ],
         "progress": progress(evaluation),
+        "result": result_payload(evaluation),
     }
 
+def result_payload(evaluation):
+    """Resultado de puntuación si la evaluación ya fue enviada; si no, None."""
+    result = getattr(evaluation, "result", None)
+    return scoring.serialize_result(result) if result else None
+
+
+def get_result(user, pk):
+    """Resultado de una evaluación propia. Borrador -> 409; ajena -> 404."""
+    evaluation = get_object_or_404(Evaluation, pk=pk, user=user)
+    payload = result_payload(evaluation)
+    if payload is None:
+        raise Conflict("La evaluación aún no se ha enviado.")
+    return payload
 
 # ---------------------------------------------------------------------------
 # Operaciones
@@ -216,4 +231,5 @@ def submit_evaluation(user, pk):
     evaluation.status = Evaluation.Status.SUBMITTED
     evaluation.submitted_at = timezone.now()
     evaluation.save(update_fields=["status", "submitted_at", "updated_at"])
+    scoring.store_result(evaluation)
     return evaluation
