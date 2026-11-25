@@ -143,3 +143,32 @@ class ResultInference(models.Model):
 
     def __str__(self):
         return f"Inferencia del resultado {self.result_id} (reglas v{self.rules_version})"
+
+class CareerRecommendation(models.Model):
+    class Origin(models.TextChoices):
+        RULE = "RULE", "Por regla"
+        AFFINITY = "AFFINITY", "Por afinidad"
+
+    result = models.ForeignKey(EvaluationResult, on_delete=models.CASCADE, related_name="recommendations")
+    program = models.ForeignKey("catalog.CareerProgram", on_delete=models.PROTECT, related_name="recommendations")
+    rank = models.PositiveSmallIntegerField()
+    compat = models.DecimalField(max_digits=5, decimal_places=2)
+    interest_affinity = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    skill_affinity = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    origin = models.CharField(max_length=10, choices=Origin.choices)
+    rule_ids = models.JSONField(default=list)
+    details = models.JSONField(default=dict)
+
+    class Meta:
+        ordering = ["result", "rank"]
+        constraints = [
+            models.UniqueConstraint(fields=["result", "program"], name="one_recommendation_per_program"),
+            models.UniqueConstraint(fields=["result", "rank"], name="one_recommendation_per_rank"),
+            models.CheckConstraint(
+                condition=Q(compat__gte=0) & Q(compat__lte=100),
+                name="recommendation_compat_between_0_and_100",
+            ),
+        ]
+
+    def __str__(self):
+        return f"#{self.rank} {self.program_id} ({self.compat})"

@@ -14,7 +14,7 @@ from rest_framework.exceptions import APIException, NotFound, ValidationError
 from apps.questionnaires.models import AnswerOption, Question, QuestionDimension, Questionnaire
 from core import config
 
-from . import inference, scoring
+from . import inference, recommendations, scoring
 from .models import Answer, Evaluation
 
 SECTION_KIND = {"INTERESTS": "INTEREST", "SKILLS": "SKILL"}
@@ -233,4 +233,21 @@ def submit_evaluation(user, pk):
     evaluation.save(update_fields=["status", "submitted_at", "updated_at"])
     result = scoring.store_result(evaluation)
     inference.store_inference(result)
+    recommendations.store_recommendations(result)
     return evaluation
+
+def get_recommendations(user, pk, department_slug=None, include_online=True):
+    from apps.catalog.models import Department
+
+    evaluation = get_object_or_404(Evaluation, pk=pk, user=user)
+    result = getattr(evaluation, "result", None)
+    if result is None:
+        raise Conflict("La evaluación aún no se ha enviado.")
+    if department_slug is None:
+        profile = getattr(user, "profile", None)
+        department = profile.preferred_department if profile else None
+    elif department_slug == "all":
+        department = None
+    else:
+        department = get_object_or_404(Department, slug=department_slug)
+    return recommendations.serialize_recommendations(result, department, include_online)

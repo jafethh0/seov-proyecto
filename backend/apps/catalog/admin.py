@@ -1,11 +1,9 @@
 from django.contrib import admin
 
-# Register your models here.
-from django.contrib import admin
-
 from .models import (
     Campus,
     CareerCategory,
+    CareerDimension,
     CareerProgram,
     Department,
     Institution,
@@ -41,12 +39,18 @@ class CareerCategoryAdmin(admin.ModelAdmin):
     search_fields = ("name",)
 
 
+class CareerDimensionInline(admin.TabularInline):
+    model = CareerDimension
+    extra = 0
+
+
 @admin.register(CareerProgram)
 class CareerProgramAdmin(admin.ModelAdmin):
     list_display = ("name", "program_type", "category", "is_active")
     list_filter = ("program_type", "category", "is_active")
     search_fields = ("name",)
     list_select_related = ("category",)
+    inlines = [CareerDimensionInline]
 
 
 @admin.register(ProgramOffering)
@@ -57,10 +61,12 @@ class ProgramOfferingAdmin(admin.ModelAdmin):
         "campus",
         "modality",
         "verified_at",
+        "verification_status",
         "is_active",
     )
     list_filter = (
         "is_active",
+        "verification_status",
         "modality",
         "campus__department",
         "campus__institution",
@@ -69,4 +75,3 @@ class ProgramOfferingAdmin(admin.ModelAdmin):
     search_fields = ("official_name", "program__name", "campus__name")
     autocomplete_fields = ("program", "campus")
     list_select_related = ("program", "campus__institution", "campus__department")
-

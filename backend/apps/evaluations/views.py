@@ -57,3 +57,11 @@ class EvaluationSubmitView(APIView):
 class EvaluationResultView(APIView):
     def get(self, request, pk):
         return Response(services.get_result(request.user, pk))
+
+class EvaluationRecommendationsView(APIView):
+    def get(self, request, pk):
+        include_online = request.query_params.get("include_online", "true").lower() != "false"
+        data = services.get_recommendations(
+            request.user, pk, request.query_params.get("department"), include_online
+        )
+        return Response(data)

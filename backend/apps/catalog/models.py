@@ -131,7 +131,9 @@ class ProgramOfferingQuerySet(models.QuerySet):
             campus__is_active=True,
             campus__institution__is_active=True,
             program__is_active=True,
-        ).exclude(source_url="")
+            ).exclude(source_url="").exclude(
+            verification_status=ProgramOffering.VerificationStatus.OUTDATED
+        )
 
 
 class ProgramOffering(models.Model):
@@ -148,11 +150,20 @@ class ProgramOffering(models.Model):
     campus = models.ForeignKey(
         Campus, on_delete=models.PROTECT, related_name="offerings"
     )
+    class VerificationStatus(models.TextChoices):
+        VERIFIED = "VERIFIED", "Verificada"
+        OUTDATED = "OUTDATED", "Desactualizada"
     official_name = models.CharField(max_length=200)  # nombre oficial en la institución
     modality = models.CharField(max_length=10, choices=Modality.choices)
     duration_months = models.PositiveSmallIntegerField(null=True, blank=True)
     source_url = models.URLField(blank=True)
     verified_at = models.DateField(null=True, blank=True)
+    verified_at = models.DateField(null=True, blank=True)
+    verification_status = models.CharField(
+        max_length=10, choices=VerificationStatus.choices, default=VerificationStatus.VERIFIED
+    )
+    admission_requirements = models.TextField(blank=True)
+    is_active = models.BooleanField(default=False)
     is_active = models.BooleanField(default=False)
 
     objects = ProgramOfferingQuerySet.as_manager()
@@ -174,3 +185,25 @@ class ProgramOffering(models.Model):
 
     def __str__(self):
         return f"{self.official_name} @ {self.campus}"
+
+class CareerDimension(models.Model):
+    program = models.ForeignKey(
+        CareerProgram, on_delete=models.CASCADE, related_name="dimension_weights"
+    )
+    dimension = models.ForeignKey(
+        "questionnaires.Dimension", on_delete=models.PROTECT, related_name="career_weights"
+    )
+    weight = models.PositiveSmallIntegerField()
+
+    class Meta:
+        ordering = ["program__name", "dimension__kind", "dimension__code"]
+        constraints = [
+            models.UniqueConstraint(fields=["program", "dimension"], name="uniq_dimension_per_program"),
+            models.CheckConstraint(
+                condition=Q(weight__gte=1) & Q(weight__lte=3),
+                name="career_dimension_weight_1_to_3",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.program} - {self.dimension_id}: {self.weight}"

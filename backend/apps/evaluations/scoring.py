@@ -12,7 +12,7 @@ from core import config
 from core.functional import levels
 from core.imperative.score_processor import compute_dimension_scores
 
-from . import inference
+from . import inference, recommendations
 from .models import Answer, EvaluationResult, ResultDimensionScore
 
 RESULT_NOTICE = (
@@ -30,6 +30,7 @@ def config_snapshot():
         "min_answered_ratio": str(config.MIN_ANSWERED_RATIO),
         "min_valid_interest_dims": config.MIN_VALID_INTEREST_DIMS,
         "min_valid_skill_dims": config.MIN_VALID_SKILL_DIMS,
+        "catalog_version": recommendations.catalog_version(),
     }
 
 
