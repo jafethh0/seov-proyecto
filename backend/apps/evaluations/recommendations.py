@@ -6,9 +6,10 @@ departamento). Al leerlas se agregan las ofertas verificadas del departamento el
 """
 from decimal import Decimal
 
-from django.db.models import Max, Q
+from django.db.models import Max
 
-from apps.catalog.models import CareerProgram, ProgramOffering
+from apps.analytics import sqlqueries
+from apps.catalog.models import CareerProgram
 from apps.questionnaires.models import Dimension
 from core.domain.career import Career, StudentProfile
 from core.functional import affinity
@@ -89,38 +90,40 @@ def store_recommendations(result):
     )
 
 
-def _offering_row(offering):
-    campus = offering.campus
+def _offering_row(row):
+    """Fila de la vista SQL v_available_offerings -> oferta para la API."""
     return {
-        "id": offering.id,
-        "official_name": offering.official_name,
-        "institution": campus.institution.name,
-        "acronym": campus.institution.acronym,
-        "sector": campus.institution.sector,
-        "campus": campus.name,
-        "department": campus.department.name,
-        "city": campus.city,
-        "modality": offering.modality,
-        "duration_months": offering.duration_months,
-        "admission_requirements": offering.admission_requirements,
-        "source_url": offering.source_url,
-        "verified_at": offering.verified_at,
+        "id": row["offering_id"],
+        "official_name": row["official_name"],
+        "institution": row["institution"],
+        "acronym": row["acronym"],
+        "sector": row["sector"],
+        "campus": row["campus"],
+        "department": row["department"],
+        "city": row["city"],
+        "modality": row["modality"],
+        "duration_months": row["duration_months"],
+        "admission_requirements": row["admission_requirements"],
+        "source_url": row["source_url"],
+        "verified_at": row["verified_at"],
     }
+
+
+def _available_offerings(department, include_online):
+    """Ofertas disponibles, consultadas con SQL declarativo (vista v_available_offerings)."""
+    if department is None:
+        return sqlqueries.fetch_all("offerings_all")
+    name = "offerings_in_department_or_online" if include_online else "offerings_in_department"
+    return sqlqueries.fetch_all(name, {"department_id": department.id})
 
 
 def serialize_recommendations(result, department=None, include_online=True):
     rows = list(result.recommendations.select_related("program__category"))
-    offerings = ProgramOffering.objects.available().filter(
-        program_id__in=[r.program_id for r in rows]
-    )
-    if department is not None:
-        condition = Q(campus__department=department)
-        if include_online:
-            condition |= Q(modality=ProgramOffering.Modality.ONLINE)
-        offerings = offerings.filter(condition)
+    wanted = {r.program_id for r in rows}
     by_program = {}
-    for offering in offerings.select_related("campus__institution", "campus__department"):
-        by_program.setdefault(offering.program_id, []).append(_offering_row(offering))
+    for row in _available_offerings(department, include_online):
+        if row["program_id"] in wanted:
+            by_program.setdefault(row["program_id"], []).append(_offering_row(row))
 
     names = dict(Dimension.objects.values_list("code", "name"))
 
