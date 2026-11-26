@@ -1,9 +1,0 @@
-{
-  "cleanUrls": true,
-  "rewrites": [
-    { "source": "/login", "destination": "/pages/login.html" },
-    { "source": "/registro", "destination": "/pages/register.html" },
-    { "source": "/perfil", "destination": "/pages/profile.html" }
-  ]
-}
-

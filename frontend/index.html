@@ -1,38 +1,171 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>SEOV - Orientación Vocacional</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="assets/css/styles.css" rel="stylesheet">
-</head>
-<body>
-  <div id="navbar"></div>
+<!doctype html>
+<html lang="es-HN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="SEOV te ayuda a explorar carreras y programas técnicos en Honduras."
+    />
+    <link rel="icon" href="favicon.png" />
+    <title>SEOV — Descubre qué estudiar</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link href="assets/css/styles.css" rel="stylesheet" />
+  </head>
+  <body>
+    <div id="navbar"></div>
+    <main>
+      <section class="hero-section">
+        <div class="container hero-grid">
+          <div>
+            <span class="eyebrow"><i data-icon="sparkles"></i> Orientación hecha para ti</span>
+            <h1>Descubre qué estudiar, <em>a tu manera</em></h1>
+            <p class="hero-lead">
+              Responde un cuestionario corto sobre lo que te gusta y lo que se te da bien. Te
+              sugerimos carreras y programas técnicos para explorar en Honduras.
+            </p>
+            <div class="d-grid d-sm-flex gap-3 mt-4">
+              <a class="btn btn-primary btn-lg" href="pages/register.html"
+                >Empezar ahora <span aria-hidden="true">→</span></a
+              >
+              <a class="btn btn-outline-primary btn-lg" href="pages/login.html">Iniciar sesión</a>
+            </div>
+            <p class="hero-note mt-3">
+              <i data-icon="check"></i> Gratis · Toma unos 15 minutos · Sin respuestas incorrectas
+            </p>
+          </div>
+          <div class="hero-visual" aria-label="Vista previa de un perfil vocacional">
+            <div class="profile-preview">
+              <div class="preview-heading">
+                <span class="icon-box coral"><i data-icon="sparkles"></i></span>
+                <div>
+                  <small>Ejemplo ilustrativo · Tu perfil destaca en</small><strong>Tecnología + creatividad</strong>
+                </div>
+              </div>
+              <div class="preview-bars">
+                <div class="preview-bar">
+                  <span>Tecnológico <b>86</b></span>
+                  <div><i style="width: 86%"></i></div>
+                </div>
+                <div class="preview-bar coral-bar">
+                  <span>Creativo <b>74</b></span>
+                  <div><i style="width: 74%"></i></div>
+                </div>
+                <div class="preview-bar amber-bar">
+                  <span>Analítico <b>68</b></span>
+                  <div><i style="width: 68%"></i></div>
+                </div>
+              </div>
+              <div class="career-preview">
+                <span class="icon-box"><i data-icon="briefcase"></i></span>
+                <div>
+                  <small>Una opción para explorar</small><strong>Ingeniería en Sistemas</strong>
+                </div>
+                <span>→</span>
+              </div>
+            </div>
+            <span class="floating-chip chip-a"><i data-icon="heart"></i> Hecho para Honduras</span>
+            <span class="floating-chip chip-b"><i data-icon="check"></i> Tú decides</span>
+          </div>
+        </div>
+      </section>
 
-  <main class="container py-5">
-    <h1 class="display-6">Sistema Experto de Orientación Vocacional</h1>
-    <p class="lead">Explora carreras y programas técnicos según tus intereses y habilidades.</p>
-    <div id="api-status" class="alert alert-secondary">Comprobando conexión con la API...</div>
-  </main>
+      <section class="section-space">
+        <div class="container">
+          <div class="section-heading text-center mx-auto">
+            <span class="section-kicker">PASO A PASO</span>
+            <h2>Encontrar tu camino puede sentirse más simple</h2>
+            <p>No necesitas tener todo claro hoy. Te ayudamos a ordenar las ideas.</p>
+          </div>
+          <div class="row g-4">
+            <div class="col-md-4">
+              <article class="step-card h-100">
+                <b>01</b><span class="icon-box"><i data-icon="heart"></i></span>
+                <h3>Cuéntanos sobre ti</h3>
+                <p>
+                  Responde qué te gusta hacer y cómo te resulta más natural pensar. No hay
+                  respuestas buenas ni malas.
+                </p>
+              </article>
+            </div>
+            <div class="col-md-4">
+              <article class="step-card h-100">
+                <b>02</b><span class="icon-box coral"><i data-icon="sparkles"></i></span>
+                <h3>Conoce tu perfil</h3>
+                <p>
+                  Te explicamos tus intereses y habilidades con palabras claras y sin etiquetas que
+                  te limiten.
+                </p>
+              </article>
+            </div>
+            <div class="col-md-4">
+              <article class="step-card h-100">
+                <b>03</b><span class="icon-box green"><i data-icon="compass"></i></span>
+                <h3>Explora opciones</h3>
+                <p>Descubre carreras y dónde estudiarlas según el departamento que prefieras.</p>
+              </article>
+            </div>
+          </div>
+        </div>
+      </section>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="assets/js/config.js"></script>
-  <script src="assets/js/api.js"></script>
-  <script src="assets/js/auth.js"></script>
-  <script>renderNavbar();</script>
-  <script>
-    apiFetch("/health/")
-      .then(() => {
-        const el = document.getElementById("api-status");
-        el.className = "alert alert-success";
-        el.textContent = "API conectada correctamente.";
-      })
-      .catch(() => {
-        const el = document.getElementById("api-status");
-        el.className = "alert alert-danger";
-        el.textContent = "No se pudo conectar con la API.";
-      });
-  </script>
-</body>
+      <section class="section-space soft-section">
+        <div class="container audience-grid">
+          <div>
+            <span class="section-kicker">PARA VOS</span>
+            <h2>Una guía para el momento en el que estás</h2>
+            <p>
+              Ya sea que estés por salir del colegio o que quieras cambiar de rumbo, podés explorar
+              sin presión.
+            </p>
+          </div>
+          <div class="d-grid gap-3">
+            <article class="audience-card">
+              <span class="icon-box"><i data-icon="book"></i></span>
+              <div>
+                <h3>Estoy en secundaria</h3>
+                <p>Quiero conocer opciones antes de elegir.</p>
+              </div>
+            </article>
+            <article class="audience-card">
+              <span class="icon-box coral"><i data-icon="compass"></i></span>
+              <div>
+                <h3>Quiero cambiar de carrera</h3>
+                <p>Busco un camino que conecte más conmigo.</p>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section-space">
+        <div class="container">
+          <div class="trust-card">
+            <span class="trust-icon"><i data-icon="info"></i></span>
+            <div>
+              <span class="section-kicker">ANTES DE EMPEZAR</span>
+              <h2>Es una guía, no un examen</h2>
+              <p>
+                Los resultados son orientativos y no deciden tu futuro. Cada oferta educativa
+                incluye su fuente y fecha de verificación.
+              </p>
+            </div>
+            <a class="btn btn-light" href="pages/register.html">Descubrir mi perfil →</a>
+          </div>
+        </div>
+      </section>
+    </main>
+    <div id="footer"></div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script type="module" src="assets/js/home.js"></script>
+  </body>
 </html>
